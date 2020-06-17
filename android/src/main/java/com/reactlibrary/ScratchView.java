@@ -9,9 +9,13 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+
 import java.util.ArrayList;
+
 import android.graphics.Rect;
+
 import androidx.annotation.Nullable;
+
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -200,6 +204,7 @@ public class ScratchView extends View implements View.OnTouchListener {
             event.putBoolean("touchState", state);
             ((ReactContext) context).getJSModule(RCTEventEmitter.class).receiveEvent(getId(),
                     RNTScratchViewManager.EVENT_TOUCH_STATE_CHANGED, event);
+
         }
     }
 
@@ -238,6 +243,12 @@ public class ScratchView extends View implements View.OnTouchListener {
             return;
         }
 
+        if (cleared) {
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            return;
+
+        }
+
         if (imageRect == null) {
             int offsetX = 0;
             int offsetY = 0;
@@ -246,20 +257,20 @@ public class ScratchView extends View implements View.OnTouchListener {
             float imageAspect = (float) image.getWidth() / (float) image.getHeight();
             float viewAspect = viewWidth / viewHeight;
             switch (resizeMode) {
-            case "cover":
-                if (imageAspect > viewAspect) {
-                    offsetX = (int) (((viewHeight * imageAspect) - viewWidth) / 2.0f);
-                } else {
-                    offsetY = (int) (((viewWidth / imageAspect) - viewHeight) / 2.0f);
-                }
-                break;
-            case "contain":
-                if (imageAspect < viewAspect) {
-                    offsetX = (int) (((viewHeight * imageAspect) - viewWidth) / 2.0f);
-                } else {
-                    offsetY = (int) (((viewWidth / imageAspect) - viewHeight) / 2.0f);
-                }
-                break;
+                case "cover":
+                    if (imageAspect > viewAspect) {
+                        offsetX = (int) (((viewHeight * imageAspect) - viewWidth) / 2.0f);
+                    } else {
+                        offsetY = (int) (((viewWidth / imageAspect) - viewHeight) / 2.0f);
+                    }
+                    break;
+                case "contain":
+                    if (imageAspect < viewAspect) {
+                        offsetX = (int) (((viewHeight * imageAspect) - viewWidth) / 2.0f);
+                    } else {
+                        offsetY = (int) (((viewWidth / imageAspect) - viewHeight) / 2.0f);
+                    }
+                    break;
             }
             imageRect = new Rect(-offsetX, -offsetY, getWidth() + offsetX, getHeight() + offsetY);
         }
@@ -277,28 +288,28 @@ public class ScratchView extends View implements View.OnTouchListener {
         int y = (int) motionEvent.getY();
 
         switch (motionEvent.getAction()) {
-        case MotionEvent.ACTION_DOWN:
-            image = createBitmapFromView();
-            reportTouchState(true);
-            float strokeWidth = brushSize > 0 ? brushSize
-                    : ((getHeight() < getWidth() ? getHeight() : getWidth()) / 10f);
-            imageRect = new Rect(0, 0, getWidth(), getHeight());
-            pathPaint.setStrokeWidth(strokeWidth);
-            path = new Path();
-            path.moveTo(x, y);
-            break;
-        case MotionEvent.ACTION_MOVE:
-            if (path != null) {
-                path.lineTo(x, y);
-                updateGrid(x, y);
-            }
-            break;
-        case MotionEvent.ACTION_CANCEL:
-        case MotionEvent.ACTION_UP:
-            reportTouchState(false);
-            image = createBitmapFromView();
-            path = null;
-            break;
+            case MotionEvent.ACTION_DOWN:
+                image = createBitmapFromView();
+                reportTouchState(true);
+                float strokeWidth = brushSize > 0 ? brushSize
+                        : ((getHeight() < getWidth() ? getHeight() : getWidth()) / 10f);
+                imageRect = new Rect(0, 0, getWidth(), getHeight());
+                pathPaint.setStrokeWidth(strokeWidth);
+                path = new Path();
+                path.moveTo(x, y);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (path != null) {
+                    path.lineTo(x, y);
+                    updateGrid(x, y);
+                }
+                break;
+            case MotionEvent.ACTION_CANCEL:
+            case MotionEvent.ACTION_UP:
+                reportTouchState(false);
+                image = createBitmapFromView();
+                path = null;
+                break;
         }
         invalidate();
         return true;
